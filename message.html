@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trending Series & Movies</title>
+    <!-- Particles.js CDN -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <style>
+        /* Basic Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #141414, #2b2b2b);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Particles Background */
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        /* Netflix-style Header */
+        .header {
+            background: linear-gradient(45deg, #e50914, #b81d24);
+            padding: 20px;
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 1px;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .genre-select {
+            display: flex;
+            justify-content: center;
+            margin: 20px;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #333;
+            color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .movie-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .movie-card {
+            width: 200px;
+            background-color: #222;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s;
+        }
+
+        /* Zoom effect on hover */
+        .movie-card:hover {
+            transform: scale(1.1);
+            z-index: 2;
+        }
+
+        .movie-card img {
+            width: 100%;
+            display: block;
+            border-bottom: 2px solid #e50914;
+        }
+
+        .movie-rating {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: gold;
+            padding: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Netflix-style Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background: #181818;
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%;
+            max-width: 900px;
+            color: #fff;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 30px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .modal-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .modal-rating {
+            text-align: center;
+            font-size: 20px;
+            color: gold;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .modal-overview {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            text-align: justify;
+            padding: 0 20px;
+        }
+
+        /* Full-width Poster Slideshow */
+        .modal-poster {
+            width: 100%;
+            height: 400px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: background-image 1s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div> <!-- Particles container -->
+
+    <div class="header">Trending Series & Movies</div>
+
+    <div class="container">
+        <div class="genre-select">
+            <label for="genre">Choose Genre:</label>
+            <select id="genre" onchange="fetchMovies()">
+                <option value="">All</option>
+                <option value="28">Action</option>
+                <option value="35">Comedy</option>
+                <option value="18">Drama</option>
+                <option value="878">Sci-Fi</option>
+            </select>
+        </div>
+
+        <div class="movie-list" id="movie-list">
+            <!-- Movie cards will be injected here -->
+        </div>
+    </div>
+
+    <!-- Modal for Movie Details -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-poster" id="modal-poster"></div>
+            <h2 class="modal-title" id="modal-title"></h2>
+            <div class="modal-rating" id="modal-rating"></div>
+            <p class="modal-overview" id="modal-overview"></p>
+        </div>
+    </div>
+
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#ffffff" },
+                "shape": {
+                    "type": "circle",
+                    "stroke": { "width": 0, "color": "#000000" },
+                    "polygon": { "nb_sides": 5 },
+                },
+                "opacity": { "value": 0.5, "random": false },
+                "size": { "value": 3, "random": true },
+                "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
+                "move": { "enable": true, "speed": 3, "direction": "none", "random": false, "straight": false, "out_mode": "out" }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": { "enable": true, "mode": "repulse" },
+                    "onclick": { "enable": true, "mode": "push" },
+                },
+                "modes": {
+                    "repulse": { "distance": 100, "duration": 0.4 },
+                    "push": { "particles_nb": 4 }
+                }
+            },
+            "retina_detect": true
+        });
+
+        const API_KEY = 'paste_your_tmbd_api_https://developer.themoviedb.org/reference/intro/getting-started';
+        const API_URL = `https://api.themoviedb.org/3`;
+        let currentImageIndex = 0;
+        let images = [];
+
+        async function fetchMovies() {
+            const genre = document.getElementById('genre').value;
+            const url = genre
+                ? `${API_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genre}`
+                : `${API_URL}/trending/movie/day?api_key=${API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                displayMovies(data.results);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        function displayMovies(movies) {
+            const movieList = document.getElementById('movie-list');
+            movieList.innerHTML = '';
+
+            movies.forEach(movie => {
+                const { title, vote_average, poster_path, id } = movie;
+
+                const movieCard = document.createElement('div');
+                movieCard.className = 'movie-card';
+                movieCard.onclick = () => openModal(id);
+
+                movieCard.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w500/${poster_path}" alt="${title}">
+                    <div class="movie-rating">Rating: ${vote_average}</div>
+                `;
+
+                movieList.appendChild(movieCard);
+            });
+        }
+
+        async function openModal(movieId) {
+            const modalOverlay = document.getElementById('modal-overlay');
+            const titleEl = document.getElementById('modal-title');
+            const ratingEl = document.getElementById('modal-rating');
+            const overviewEl = document.getElementById('modal-overview');
+            const posterEl = document.getElementById('modal-poster');
+
+            try {
+                const response = await fetch(`${API_URL}/movie/${movieId}?api_key=${API_KEY}`);
+                const data = await response.json();
+                
+                titleEl.textContent = data.title;
+                ratingEl.textContent = `Rating: ${data.vote_average}`;
+                overviewEl.textContent = data.overview;
+
+                const imagesResponse = await fetch(`${API_URL}/movie/${movieId}/images?api_key=${API_KEY}`);
+                const imagesData = await imagesResponse.json();
+                
+                images = imagesData.posters.map(poster => `https://image.tmdb.org/t/p/w500${poster.file_path}`);
+                currentImageIndex = 0;
+
+                if (images.length > 0) {
+                    posterEl.style.backgroundImage = `url(${images[0]})`;
+                    startSlideshow(posterEl);
+                } else {
+                    posterEl.style.backgroundImage = '';
+                }
+
+                modalOverlay.style.display = 'flex';
+            } catch (error) {
+                console.error("Error fetching movie details:", error);
+            }
+        }
+
+        function startSlideshow(posterEl) {
+            clearInterval(posterEl.interval);
+            posterEl.interval = setInterval(() => {
+                currentImageIndex = (currentImageIndex + 1) % images.length;
+                posterEl.style.backgroundImage = `url(${images[currentImageIndex]})`;
+            }, 3000); // Change image every 3 seconds
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            clearInterval(document.getElementById('modal-poster').interval);
+        }
+
+        fetchMovies();
+    </script>
+</body>
+</html>
